@@ -168,3 +168,27 @@ figure3.update_xaxes(tickangle=45, tickfont=dict(color='black', size=14),tickmod
 figure3.update_layout(barmode='group', title_text='Wales Employment Totals Per Year  (2009 to 2018)')
 figure3.show()
 
+#Show worst and best performing sectors
+temp_calc_df = calc_df.drop(['Industry_Totals'], axis = 1)
+
+temp_calc_df.drop([10], inplace = True)
+
+melt_df = pd.melt(temp_calc_df, id_vars=['Industry'])
+
+if len(colors) <= 10:
+    colors = colors * 10
+
+# Create interactive, dynamic scatter plot
+figure4 = px.scatter(melt_df, 
+                     x = melt_df.variable, 
+                     y = melt_df.value, 
+                     animation_frame = melt_df.variable, 
+                     animation_group = melt_df.Industry,
+                     color = melt_df.Industry,
+                     range_x = [2008,2019], 
+                     range_y = [0,450000]
+                )
+
+figure4.update_xaxes(tickangle=90, tickfont=dict(color='black', size=14), tickmode='linear')
+figure4.show()
+
