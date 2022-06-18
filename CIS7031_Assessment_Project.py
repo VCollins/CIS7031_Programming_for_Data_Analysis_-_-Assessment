@@ -9,11 +9,11 @@ import seaborn as sns
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-%matplotlib inline
+#%matplotlib inline
 
 print("Initialization Completed")
 
-#TASK 1 - Data processing
+# TASK 1 - Data preprocessing
 
 #Alter filepath as necessary
 #This assumes the files are named in the following format: 'WalesStatsExport2009.csv'
@@ -68,7 +68,7 @@ industry_names = main_df['Industry']
 
 main_df = main_df.set_index("Industry")
 
-#TASK 2 - Data Analysis
+# TASK 2 - Data Analysis
 
 #Initialise arrays for total values
 total_values_per_ind = np.array([])
@@ -119,8 +119,6 @@ figure1.update_xaxes(tickangle=45, tickfont=dict(color='black', size=14),tickmod
 figure1.update_layout(barmode='group', title_text='Wales Employment (2009 to 2018)')
 figure1.show()
 
-#TASK 2 - Data comparison
-
 #calculate growth of industries per year
 new_calc_df = calc_df.drop(['Industry'], axis = 1)
 
@@ -168,6 +166,8 @@ figure3.update_xaxes(tickangle=45, tickfont=dict(color='black', size=14),tickmod
 figure3.update_layout(barmode='group', title_text='Wales Employment Totals Per Year  (2009 to 2018)')
 figure3.show()
 
+# TASK 3 - Data manipulation in lieu of scatter plot creation
+
 #Show worst and best performing sectors
 temp_calc_df = calc_df.drop(['Industry_Totals'], axis = 1)
 
@@ -192,3 +192,98 @@ figure4 = px.scatter(melt_df,
 figure4.update_xaxes(tickangle=90, tickfont=dict(color='black', size=14), tickmode='linear')
 figure4.show()
 
+# TASK 4 - Data manipulation in lieu of principal component analysis
+
+#Data preprocessing
+temp_calc_df = calc_df.drop(['Industry_Totals'], axis = 1)
+
+x_range = temp_calc_df.loc[:, years].values
+
+y_range = temp_calc_df.loc[:,['Industry']].values
+
+x_range = StandardScaler().fit_transform(x_range)
+
+pd.DataFrame(data = x_range, columns = years)
+
+#Principal component analysis
+pca = PCA(n_components=2)
+
+principalComponents = pca.fit_transform(x_range)
+
+principal_df = pd.DataFrame(data = principalComponents,
+               columns = ['principal component 1', 'principal component 2'])
+
+plot_df = pd.concat([principal_df, calc_df[['Industry']]], axis = 1)
+
+fig = plt.figure(figsize = (8,8))
+ax = fig.add_subplot(1,1,1) 
+ax.set_xlabel('Principal Component 1', fontsize = 15)
+ax.set_ylabel('Principal Component 2', fontsize = 15)
+ax.set_title('2 Component PCA', fontsize = 20)
+
+colors = ['#0000ff', '#ff0000', '#00ff00', '#dd00ff', '#ffaa00', '#00bbff', '#ff6666', '#ccee88', '#ffaadd', '#ffdd00']
+
+for industry, color in zip(industry_names,colors):
+    indicesToKeep = plot_df['Industry'] == industry
+    ax.scatter(plot_df.loc[indicesToKeep, 'principal component 1'],
+               plot_df.loc[indicesToKeep, 'principal component 2'],
+               c = color,
+               s = 50
+              )
+ax.legend(industry_names)
+ax.grid()
+
+#Heatmap generation
+plt.figure(figsize=(20,15))
+
+sns.heatmap(main_df.corr(), annot=True, fmt=".5f", linewidths=.5)
+
+# TASK 5 - K-Means cluster code
+#prepare data frame for cluster purposes
+cluster_df = temp_calc_df.drop(['2009'], axis = 1)
+cluster_df = cluster_df.drop([10], axis = 0)
+new_cluster_df = cluster_df.drop(['Industry'], axis = 1)
+cluster_df = cluster_df.drop(['2011', '2012', '2013', '2014', '2015', '2016', '2017'], axis = 1)
+cluster_df = cluster_df.set_index("Industry")
+
+#fig, ax = plt.subplots()
+#cluster_df.plot('2010', '2018', kind='scatter', ax=ax)
+
+#for k, v in cluster_df.iterrows():
+#    ax.annotate(k, v)
+    
+#fig.canvas.draw()
+arr = new_cluster_df.to_numpy()
+
+plt.figure(figsize=(20,20))
+
+kmeans2 = KMeans(n_clusters=2, max_iter=50, random_state=1)  
+kmeans2.fit(arr)
+plt.scatter(arr[:,0], arr[:,1], c=kmeans2.labels_, cmap='rainbow', s=200)
+plt.rcParams.update({'font.size': 18})
+x_value=arr[:,0]
+y_value=arr[:,1]
+for r in range(0, 10, 1):
+    plt.annotate(industry_names[r], (x_value[r], y_value[r]))
+    
+plt.figure(figsize=(20,20))
+plt.scatter(kmeans2.cluster_centers_[:,0], kmeans2.cluster_centers_[:,1], s=600, color='black')
+
+plt.figure(figsize=(20,20))
+kmeans3 = KMeans(n_clusters=3, max_iter=50, random_state=1)  
+kmeans3.fit(arr)
+plt.scatter(arr[:,0], arr[:,1], c=kmeans3.labels_, cmap='rainbow', s=200)
+x_value=arr[:,0]
+y_value=arr[:,1]
+for r in range(0, 10, 1):
+    plt.annotate(industry_names[r], (x_value[r], y_value[r]))
+
+plt.figure(figsize=(20,20))
+plt.scatter(kmeans3.cluster_centers_[:,0], kmeans3.cluster_centers_[:,1], s=600, color='black')
+
+# TASK 6 - Hierarchy Map
+
+hierarchy_data_df = temp_calc_df.drop(['Industry'], axis = 1)
+hierarchy_data_df = hierarchy_data_df.drop([10], axis = 0)
+hierarchy_df = hierarchy.linkage(hierarchy_data_df.values, 'single')
+dn = hierarchy.dendrogram(hierarchy_df, labels=industry_names.to_list(), orientation='right')
